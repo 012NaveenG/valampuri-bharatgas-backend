@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  emp_id      String   @id @default(uuid())
+  emp_name    String
+  emp_contact String? // Optional for cases when contact is not provided
+  username    String   @unique
+  password    String
+  isAdmin     Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  Sales                  Sales[] // One-to-many relation with Sales
+  EmployeeOpeningDetails EmployeeOpeningDetails[]
+}
+
+model Customer {
+  cust_id              String   @id @default(uuid())
+  cust_name            String?
+  area_no              Int? // Optional field for area number
+  area_name            String? // Optional field for area name
+  full_delivered       Int      @default(0) // Defaults to 0
+  empty_delivered      Int?     @default(0)
+  extra_empty_received Int?     @default(0)
+  pending_empty        Int?     @default(0)
+  pending_payment      Float?   @default(0.0) // Defaults to 0.0 for balance
+  deposit              Float?   @default(0.0)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @default(now())
+
+  Sales Sales[] // One-to-many relation with Sales
+}
+
+model Truck {
+  truck_id     String   @id @default(uuid())
+  truck_name   String // Name of the truck
+  truck_number String   @unique // Unique truck registration number
+  capacity     Int? // Optional field for truck capacity
+  is_active    Boolean  @default(true) // Active status of the truck
+  created_at   DateTime @default(now())
+  updated_at   DateTime @default(now())
+
+  Sales                  Sales[] // One-to-many relation with Sales
+  EmployeeOpeningDetails EmployeeOpeningDetails[]
+}
+
+model Sales {
+  sale_id               String      @id @default(uuid())
+  delivered_by          String // Employee who delivered the sale
+  delivered_to          String // Customer to whom the sale was made
+  truck_id              String // Truck used for delivery
+  full_delivered        Int         @default(0) // Number of full cylinders delivered
+  empty_delivered       Int         @default(0) // Number of empty cylinders delivered
+  empty_received        Int         @default(0) // Number of empty cylinders received
+  total_amount_received Float       @default(0.0) // Total payment received
+  bal_payment           Float       @default(0.0) // Remaining balance payment
+  payment_mode          PaymentMode // Enum for payment mode
+  created_at            DateTime    @default(now())
+
+  Employee Employee @relation(fields: [delivered_by], references: [emp_id])
+  Customer Customer @relation(fields: [delivered_to], references: [cust_id])
+  Truck    Truck    @relation(fields: [truck_id], references: [truck_id])
+}
+
+model EmployeeOpeningDetails {
+  id                    String   @id @default(uuid()) // Unique identifier for each entry
+  emp_id                String // Reference to Employee who filled the details
+  truck_id              String // Reference to the Truck used
+  total_full_cylinders  Int      @default(0) // Total full cylinders picked up
+  total_empty_cylinders Int      @default(0) // Total empty cylinders picked up
+  assigned_area         String
+  opening_date          DateTime @default(now()) // Date of the entry
+  created_at            DateTime @default(now()) // Timestamp when entry was created
+  updated_at            DateTime @updatedAt // Automatically updates when the record is updated
+
+  // Relations
+  Employee Employee @relation(fields: [emp_id], references: [emp_id])
+  Truck    Truck    @relation(fields: [truck_id], references: [truck_id])
+}
+
+// Enum for payment mode
+enum PaymentMode {
+  UPI
+  Cash
+  Both
+}
