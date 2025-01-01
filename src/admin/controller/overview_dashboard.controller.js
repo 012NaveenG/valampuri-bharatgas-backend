@@ -18,10 +18,20 @@ const overview = AsyncHandler(async (req, res) => {
             gte: today,
           },
         },
-        select: {
-          total_amount_received: true,
-          bal_payment: true,
-        },
+        include:{
+          Customer:{
+            select:{
+              cust_id:true,
+              cust_name:true
+            }
+          },
+          Employee:{
+            select:{
+              emp_id:true,
+              emp_name:true
+            }
+          }
+        }
       }),
       prismaDB.sales.groupBy({
         by: ["created_at"],

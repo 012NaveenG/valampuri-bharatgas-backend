@@ -7,7 +7,6 @@ import jwt from "jsonwebtoken";
 const loginEmployee = AsyncHandler(async (req, res) => {
   const { username, password } = req.body;
 
-  console.log(username, password);
   if (!(username && password)) {
     return res
       .status(400)
@@ -40,6 +39,21 @@ const loginEmployee = AsyncHandler(async (req, res) => {
     { expiresIn: "1h" } // Set token expiration for better security
   );
 
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Check if an entry already exists for the employee today
+  const isEmployeeFilledOpeningDetailsAlready = await prismaDB.employeeOpeningDetails.findFirst({
+    where: {
+      emp_id: isEmployeeExists.emp_id,
+      opening_date: {
+        gte: today,
+        lt: new Date(today.getTime() + 24 * 60 * 60 * 1000), // End of the day
+      },
+    },
+  });
+
   // Set cookie options
   const Options = {
     httpOnly: true,
@@ -55,7 +69,7 @@ const loginEmployee = AsyncHandler(async (req, res) => {
   return res
     .status(200)
     .cookie("token", token, Options)
-    .json(new ApiResponse(200, responseData, "Logged in successfully"));
+    .json(new ApiResponse(isEmployeeFilledOpeningDetailsAlready?409:200, responseData, "Logged in successfully"));
 });
 
 const logoutEmployee = AsyncHandler(async (req, res) => {
